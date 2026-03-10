@@ -1,0 +1,46 @@
+name: Build libYrener
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: Unzip sources
+        run: unzip yrener_soft.zip -d src
+
+      - name: Download ImGui
+        run: |
+          git clone https://github.com/ocornut/imgui.git src/imgui
+          
+      - name: Build
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+            -shared -fPIC -O2 -std=c++17 \
+            -o libYrener.so \
+            src/main.cpp \
+            src/imgui/imgui.cpp \
+            src/imgui/imgui_draw.cpp \
+            src/imgui/imgui_tables.cpp \
+            src/imgui/imgui_widgets.cpp \
+            src/imgui/backends/imgui_impl_android.cpp \
+            src/imgui/backends/imgui_impl_opengl3.cpp \
+            -I src \
+            -I src/imgui \
+            -llog -landroid -lEGL -lGLESv3
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: libYrener
+          path: libYrener.so
